@@ -62,6 +62,33 @@ class BodyStatesRecordingToVtp : public BodyStatesRecording
  * the output is map of strings with VTK XML format can visualized by ParaView
  * the data type vtkUnstructedGrid
  */
+class BodyStatesRecordingToVtu : public BodyStatesRecordingToVtp
+{
+  public:
+    BodyStatesRecordingToVtu(SPHBody &body) : BodyStatesRecordingToVtp(body) { output_path = ""; };
+    virtual ~BodyStatesRecordingToVtu() = default;
+    void setOutputPath(std::string t_output_path) { output_path = t_output_path; };
+    //const VtuStringData &GetVtuData() const;
+    /*void clear()
+    {
+        _vtuData.clear();
+    }*/
+
+  protected:
+    virtual void writeWithFileName(const std::string &sequence) override;
+    //virtual void writeVtu(std::ostream &stream, SPHBody *body);
+
+  private:
+    //VtuStringData _vtuData;
+    std::string output_path;
+};
+
+/**
+ * @class BodyStatesRecordingToVtpString
+ * @brief  Write strings for bodies
+ * the output is map of strings with VTK XML format can visualized by ParaView
+ * the data type vtkUnstructedGrid
+ */
 class BodyStatesRecordingToVtpString : public BodyStatesRecordingToVtp
 {
   public:

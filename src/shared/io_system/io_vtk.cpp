@@ -79,8 +79,97 @@ void BodyStatesRecordingToVtp::writeWithFileName(const std::string &sequence)
     }
 }
 //=============================================================================================//
+void BodyStatesRecordingToVtu::writeWithFileName(const std::string &sequence)
+{
+    for (SPHBody *body : bodies_)
+    {
+        if (body->checkNewlyUpdated())
+        {
+            BaseParticles &base_particles = body->getBaseParticles();
+            if (state_recording_)
+            {
+                std::string filefullpath = io_environment_.output_folder_ + "/" + body->getName() + "_" + sequence + ".vtu";
+                if (output_path != "")
+                {
+                    filefullpath = output_path + "/" + body->getName() + "_" + sequence + ".vtu";
+                }
+                
+                std::cout << filefullpath << std::endl;
+                if (fs::exists(filefullpath))
+                {
+                    fs::remove(filefullpath);
+                }
+                std::ofstream out_file(filefullpath.c_str(), std::ios::trunc);
+                out_file << std::setprecision(15);
+                // begin of the XML file
+                out_file << "<?xml version=\"1.0\"?>\n";
+                out_file << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n";
+                out_file << " <UnstructuredGrid>\n";
+
+                size_t total_real_particles = base_particles.TotalRealParticles();
+                out_file << "  <Piece Name =\"" << body->getName() << "\" NumberOfPoints=\"" << total_real_particles
+                         << "\" NumberOfCells=\"" << total_real_particles << "\">\n";
+
+                // write current/final particle positions first
+                out_file << "   <Points>\n";
+                out_file << "    <DataArray Name=\"Position\" type=\"Float64\"  NumberOfComponents=\"3\" Format=\"ascii\">\n";
+                out_file << "    ";
+                for (size_t i = 0; i != total_real_particles; ++i)
+                {
+                    Vec3d particle_position = upgradeToVec3d(base_particles.ParticlePositions()[i]);
+                    out_file << particle_position[0] << " " << particle_position[1] << " " << particle_position[2] << " ";
+                }
+                out_file << std::endl;
+                out_file << "    </DataArray>\n";
+                out_file << "   </Points>\n";
+
+                // write header of particles data
+                out_file << "   <PointData>\n";
+                writeParticlesToVtk(out_file, base_particles);
+                out_file << "   </PointData>\n";
+
+                // write empty cells
+                out_file << "   <Cells>\n";
+                out_file << "    <DataArray type=\"Int32\"  Name=\"connectivity\"  Format=\"ascii\">\n";
+                out_file << "    ";
+                for (size_t i = 0; i != total_real_particles; ++i)
+                {
+                    out_file << i << " ";
+                }
+                out_file << std::endl;
+                out_file << "    </DataArray>\n";
+                out_file << "    <DataArray type=\"Int32\"  Name=\"offsets\"  Format=\"ascii\">\n";
+                out_file << "    ";
+                for (size_t i = 0; i != total_real_particles; ++i)
+                {
+                    out_file << i + 1 << " ";
+                }
+                out_file << std::endl;
+                out_file << "    </DataArray>\n";
+                out_file << "    <DataArray type=\"UInt8\"  Name=\"types\"  Format=\"ascii\">\n";
+                out_file << "    ";
+                for (size_t i = 0; i != total_real_particles; ++i)
+                {
+                    out_file << 1 << " ";
+                }
+                out_file << std::endl;
+                out_file << "    </DataArray>\n";
+                out_file << "   </Cells>\n";
+
+                out_file << "  </Piece>\n";
+                out_file << " </UnstructuredGrid>\n";
+                out_file << "</VTKFile>\n";
+
+                out_file.close();
+            }
+        }
+        body->setNotNewlyUpdated();
+    }
+}
+//=============================================================================================//
 void BodyStatesRecordingToVtpString::writeWithFileName(const std::string &sequence)
 {
+    int i = 0 ;
     for (SPHBody *body : bodies_)
     {
         if (body->checkNewlyUpdated())
@@ -95,6 +184,7 @@ void BodyStatesRecordingToVtpString::writeWithFileName(const std::string &sequen
             }
         }
         body->setNotNewlyUpdated();
+        i++;
     }
 }
 //=============================================================================================//
